@@ -1,23 +1,11 @@
 const Router = require('koa-router');
 const router = new Router({ prefix: '/users' });
-const josnwebtoken = require('jsonwebtoken');
+const jwt = require('koa-jwt');
 const config = require('../config');
 const { find, findById, create, update, delete: del, login } = require('../controllers/users');
 /** 验证用户身份 将用户信息存储到ctx.state */
-const jwtAuth = async (ctx,next) => {
-    let  {authorization = '' } = ctx.request.headers;
-    authorization = authorization.replace('Bearer ', '')
-    try{
-        let user = josnwebtoken.verify(authorization, config.jwtPwd);
-        ctx.state.user = user;
-        console.log(user);
-    }catch(e) {
-        console.log(e)
-        ctx.throw(401, 'token验证错误');
-    }
-    await next()
-
-}
+const jwtAuth = jwt({secret: config.jwtPwd})
+/** 确认用户身份统一 */
 const userCheck = async (ctx, next) => {
     if(ctx.params.id !== ctx.state.user.id) { ctx.throw(401, '没有权限')};
     await next();

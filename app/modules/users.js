@@ -10,20 +10,19 @@ const userSchema = new Schema({
   gender: { type: Number, enum: [0, 1, 2], default: 0, required: true }, // 0 未知 1 男 2 女
   headline: { type: String }, // 签名
   locations: { type: [{type:String}], select: false }, // 居住地 对象数组
-//   locations: { type: [{ type: Schema.Types.ObjectId, ref: 'Topic' }], select: false },
-  business: {type: String, default: '', select: false}, //{ type: Schema.Types.ObjectId, ref: 'Topic', select: false },
+  business: {type: Schema.Types.ObjectId, ref: 'Topic', select: false},
   employments: { // 雇佣情况
     type: [{
-      company: {type: String },// { type: Schema.Types.ObjectId, ref: 'Topic' }, // 公司
-      job: {type: String } // { type: Schema.Types.ObjectId, ref: 'Topic' }, // 职位
+      company: {type: Schema.Types.ObjectId, ref: 'Topic' },// 公司
+      job: {type: Schema.Types.ObjectId, ref: 'Topic' } // 职位
     }],
     select: false,
   },
   educations: {
     type: [{
-      school: {type: String }, // { type: Schema.Types.ObjectId, ref: 'Topic' }, // 学校
-      major: {type: String }, //{ type: Schema.Types.ObjectId, ref: 'Topic' }, // 专业
-      diploma: { type: Number, enum: [1, 2, 3, 4, 5] }, // 学历水平 1 高中 2 大专 3 本科 4 硕士 5 博士
+      school: {type: Schema.Types.ObjectId, ref: 'Topic' }, // 学校
+      major: {type: Schema.Types.ObjectId, ref: 'Topic' }, // 专业
+      diploma: { type: Number, enum: [1, 2, 3, 4, 5] }, // 文凭 1 高中 2 大专 3 本科 4 硕士 5 博士
       entrance_year: { type: Number }, // 入学年份
       graduation_year: { type: Number }, // 毕业年份
     }],

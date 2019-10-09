@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 const Router = require('koa-router');
 const User = require('../modules/users');
+const Topic = require('../modules/topic');
 const router = new Router({ prefix: '/users' });
 const jwt = require('koa-jwt');
 const config = require('../config');
-const { find, findById, create, update, delete: del, login, listFollowing, listFollower, follow, unfollow } = require('../controllers/users');
+const { find, findById, create, update, delete: del, login, listFollowing, listFollower, follow, unfollow, followTopic, unfollowTopic } = require('../controllers/users');
 /** 中间件： 验证用户身份 将用户信息存储到ctx.state */
 const jwtAuth = jwt({secret: config.jwtPwd})
 /** 中间件： 确认用户身份统一 */
@@ -20,6 +21,17 @@ const checkUserExist = async (ctx, next) => {
     const user = await User.findById(ctx.params.id);
     if(!user){
         ctx.throw('404', '用户不存在');
+    }
+    await next()
+}
+/** 中间件： 判断id是否正确以及对应话题存在 */
+const checkTopicExist = async (ctx, next) => {
+    if(!mongoose.Types.ObjectId.isValid(ctx.params.id)) {
+        ctx.throw('500', 'ID不合法');
+    };
+    const user = await Topic.findById(ctx.params.id);
+    if(!user){
+        ctx.throw('404', '话题不存在');
     }
     await next()
 }
@@ -43,5 +55,9 @@ router.get('/:id/follower', checkUserExist, listFollower);
 router.put('/follow/:id',jwtAuth, checkUserExist, follow);
 /** 取消关注 */
 router.put('/unfollow/:id',jwtAuth, checkUserExist, unfollow);
+/** 关注话题 */
+router.put('/followTopic/:id',jwtAuth, checkTopicExist, followTopic);
+/** 取消关注话题 */
+router.put('/unfollowTopic/:id',jwtAuth, checkTopicExist, unfollowTopic);
 
 module.exports = router;

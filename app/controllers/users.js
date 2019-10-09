@@ -5,14 +5,33 @@ const config = require('../config');
 class UsersCtl {
     /**  查询用户列表 */
     async find(ctx) {
-        const user = await User.find();
-        ctx.body = user;
+        const limit = parseInt(ctx.query.limit) || 10;
+        const offset = parseInt(ctx.query.offset) || 0;
+        ctx.body = await User.find({
+            name: new RegExp(ctx.query.kw, "i") // 支持模糊搜索
+        }).limit(limit).skip(offset);
     }
     /** 查询单个用户详情 */
     async findById(ctx) {
-        // const { fields = '' } = ctx.query;
-        // const selectFields = fields.split(';').filter(f => f).map(f => ' +' + f).join('');
-        const user= await User.findById(ctx.params.id).select(' +locations +business +employments +educations');
+        const { fields = '' } = ctx.query;
+        let populates = '';
+        // 添加自定义获取数据
+        const selectFields = fields.split(';').filter(f => f).map(f => {
+            // 添加索引数据详情
+            if(f === 'educations') {
+                populates += ' educations.school educations.major';
+            } else if (f === 'employments') {
+                populates+=' employments.company employments.job';
+            } else if(f === 'followingTopics') {
+                populates+=' followingTopics followingTopics.introduction';
+            }
+            // 过滤密码
+            if(f==='pwd') {
+                return ''
+            }
+            return ' +' + f
+        }).join('');// ' +locations +business +employments +educations'
+        const user= await User.findById(ctx.params.id).select(selectFields).populate(populates);
         if(!user) {
             ctx.throw(404, '用户不存在');
         }
@@ -92,7 +111,7 @@ class UsersCtl {
             currentUser.save();
             ctx.body= {state: 1}
         }else{
-            ctx.throw(204, '已关注该用户');
+            ctx.throw(403, '已关注该用户');
         }
     }
     /** 取消关注 */
@@ -104,7 +123,30 @@ class UsersCtl {
             currentUser.save();
             ctx.body= {state: 1}
         }else{
-            ctx.throw(204, '已取消关注该用户');
+            ctx.throw(403, '已取消关注该用户');
+        }
+    }
+       /** 关注话题操作 */
+       async followTopic(ctx) {
+        const currentUser = await User.findById(ctx.state.user.id).select('followingTopics');
+        if(!currentUser.followingTopics.map(id=>id.toString()).includes(ctx.params.id)){
+            currentUser.followingTopics.push(ctx.params.id);
+            currentUser.save();
+            ctx.body= {state: 1}
+        }else{
+            ctx.throw(403, '已关注');
+        }
+    }
+    /** 取消关注话题 */
+    async unfollowTopic(ctx) {
+        const currentUser = await User.findById(ctx.state.user.id).select('followingTopics');
+        let index = currentUser.followingTopics.map(id=>id.toString()).indexOf(ctx.params.id);
+        if(index>-1){
+            currentUser.followingTopics.splice(index,1);
+            currentUser.save();
+            ctx.body= {state: 1}
+        }else{
+            ctx.throw(403, '未关注该话题');
         }
     }
 }

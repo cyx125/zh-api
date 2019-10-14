@@ -1,8 +1,26 @@
+const mongoose = require('mongoose');
 const User = require('../modules/users');
+const Answer = require('../modules/answers');
 const josnwebtoken = require('jsonwebtoken');
 const config = require('../config');
 
 class UsersCtl {
+    /** 中间件： 确认用户身份统一 */
+    async userCheck (ctx, next) {
+        if(ctx.params.id !== ctx.state.user.id) { ctx.throw(401, '没有权限')};
+        await next();
+    }
+    /** 中间件： 判断id是否正确以及对应用户存在 */
+    async checkUserExist (ctx, next) {
+        if(!mongoose.Types.ObjectId.isValid(ctx.params.id)) {
+            ctx.throw('500', 'ID不合法');
+        };
+        const user = await User.findById(ctx.params.id);
+        if(!user){
+            ctx.throw('404', '用户不存在');
+        }
+        await next()
+    }
     /**  查询用户列表 */
     async find(ctx) {
         const limit = parseInt(ctx.query.limit) || 10;
@@ -126,8 +144,8 @@ class UsersCtl {
             ctx.throw(403, '已取消关注该用户');
         }
     }
-       /** 关注话题操作 */
-       async followTopic(ctx) {
+    /** 关注话题操作 */
+    async followTopic(ctx) {
         const currentUser = await User.findById(ctx.state.user.id).select('followingTopics');
         if(!currentUser.followingTopics.map(id=>id.toString()).includes(ctx.params.id)){
             currentUser.followingTopics.push(ctx.params.id);
@@ -148,6 +166,90 @@ class UsersCtl {
         }else{
             ctx.throw(403, '未关注该话题');
         }
+    }
+    /** 点赞的回答列表 */
+    async listLikesAnswer(ctx) {
+        const user = await User.findById(ctx.params.id).select('likingAnswers').populate('likingAnswers');
+        ctx.body = user.likingAnswers;
+    }
+    /** 对答案点赞 */
+    async likesAnswer(ctx, next) {
+        const currentUser = await User.findById(ctx.state.user.id).select('likingAnswers');
+        if(!currentUser.likingAnswers.map(id=>id.toString()).includes(ctx.params.id)){
+            currentUser.likingAnswers.push(ctx.params.id);
+            currentUser.save();
+            await Answer.findByIdAndUpdate(ctx.params.id, {$inc: {likesCount: 1}});
+            ctx.body= {state: 1}
+        }else{
+            ctx.throw(403, '已点赞');
+        }
+        await next()
+    }
+    /** 取消对答案点赞 */
+    async unlikesAnswer(ctx) {
+        const currentUser = await User.findById(ctx.state.user.id).select('likingAnswers');
+        let index = currentUser.likingAnswers.map(id=>id.toString()).indexOf(ctx.params.id);
+        if(index>-1){
+            currentUser.likingAnswers.splice(index,1);
+            currentUser.save();
+            await Answer.findByIdAndUpdate(ctx.params.id, {$inc: {likesCount: -1}});
+            ctx.body= {state: 1}
+        }
+        // else{
+        //     ctx.throw(403, '未点赞该问题');
+        // }
+        ctx.status = 204;
+    }
+    /** 对答案踩 */
+    async dislikesAnswer(ctx, next) {
+        const currentUser = await User.findById(ctx.state.user.id).select('dislikingAnswers');
+        if(!currentUser.dislikingAnswers.map(id=>id.toString()).includes(ctx.params.id)){
+            currentUser.dislikingAnswers.push(ctx.params.id);
+            currentUser.save();
+            ctx.body= {state: 1}
+        }else{
+            ctx.throw(403, '已踩');
+        }
+        await next()
+    }
+    /** 取消对答案踩 */
+    async undislikesAnswer(ctx) {
+        const currentUser = await User.findById(ctx.state.user.id).select('dislikingAnswers');
+        let index = currentUser.dislikingAnswers.map(id=>id.toString()).indexOf(ctx.params.id);
+        if(index>-1){
+            currentUser.dislikingAnswers.splice(index,1);
+            currentUser.save();
+            ctx.body= {state: 1}
+        }
+        ctx.status = 204;
+    }
+    /** 收藏的回答列表 */
+    async listCollectedAnswers(ctx) {
+        const user = await User.findById(ctx.params.id).select('collectingAnswers').populate('collectingAnswers');
+        ctx.body = user.collectingAnswers;
+    }
+    /** 收藏答案 */
+    async collectAnswer(ctx, next) {
+        const currentUser = await User.findById(ctx.state.user.id).select('collectingAnswers');
+        if(!currentUser.collectingAnswers.map(id=>id.toString()).includes(ctx.params.id)){
+            currentUser.collectingAnswers.push(ctx.params.id);
+            currentUser.save();
+            ctx.body= {state: 1}
+        }else{
+            ctx.throw(403, '已收藏');
+        }
+        await next()
+    }
+    /** 取消收藏答案 */
+    async uncollectAnswer(ctx) {
+        const currentUser = await User.findById(ctx.state.user.id).select('collectingAnswers');
+        let index = currentUser.collectingAnswers.map(id=>id.toString()).indexOf(ctx.params.id);
+        if(index>-1){
+            currentUser.collectingAnswers.splice(index,1);
+            currentUser.save();
+            ctx.body= {state: 1}
+        }
+        ctx.status = 204;
     }
 }
 

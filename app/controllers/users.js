@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../modules/users');
 const Answer = require('../modules/answers');
+const Comments = require('../modules/comments');
 const josnwebtoken = require('jsonwebtoken');
 const config = require('../config');
 
@@ -250,6 +251,12 @@ class UsersCtl {
             ctx.body= {state: 1}
         }
         ctx.status = 204;
+    }
+
+    /** 用户评论列表 */
+    async listComments(ctx) {
+        const list = await Comments.find({commentator: ctx.params.id});
+        ctx.body = list;
     }
 }
 

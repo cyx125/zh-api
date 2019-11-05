@@ -6,7 +6,7 @@ const { checkUserExist, userCheck, find, findById, create, update, delete: del,
     login, listFollowing, listFollower, follow,
     unfollow, followTopic, unfollowTopic, listLikesAnswer,
     likesAnswer, unlikesAnswer, dislikesAnswer, undislikesAnswer,
-    listCollectedAnswers, collectAnswer, uncollectAnswer } = require('../controllers/users');
+    listCollectedAnswers, collectAnswer, uncollectAnswer, listComments } = require('../controllers/users');
 const {checkTopicExist} = require('../controllers/topic');
 const {checkAnswerExist} = require('../controllers/answers');
 
@@ -53,6 +53,9 @@ router.get('/:id/listCollectedAnswers', checkUserExist, listCollectedAnswers);
 router.put('/collectAnswer/:id',jwtAuth, checkAnswerExist, collectAnswer);
 /** 取消对答案的收藏 */
 router.put('/uncollectAnswer/:id',jwtAuth, checkAnswerExist, uncollectAnswer);
+/** 获取用户评论 */
+router.get('/:id/listComments', checkUserExist, listComments);
+
 
 
 module.exports = router;

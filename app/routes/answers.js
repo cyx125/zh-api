@@ -1,6 +1,4 @@
-const mongoose = require('mongoose');
 const Router = require('koa-router');
-const Question = require('../modules/question');
 const router = new Router({ prefix: '/question/:questionId/answers' });
 const config = require('../config');
 const { checkAnswerExist, checkAnswerer, find, findById, create, update, userAnswersList} = require('../controllers/answers');
